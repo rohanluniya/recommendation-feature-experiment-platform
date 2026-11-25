@@ -43,7 +43,7 @@ All numbers below are measured directly on the verified Apple M4 Pro workstation
 Prerequisites: Python 3.12 and [`uv`](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
-git clone https://github.com/ankdeshm/recommendation-feature-experiment-platform.git
+git clone https://github.com/rohanluniya/recommendation-feature-experiment-platform.git
 cd recommendation-feature-experiment-platform
 
 # One-command setup, Iceberg V2 vertical slice, Feast 0.68.0 apply, and live Control Tower on :8030
