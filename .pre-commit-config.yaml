@@ -1,0 +1,20 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-lint
+        name: ruff lint
+        entry: uv run ruff check .
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: mypy-check
+        name: mypy type check
+        entry: uv run mypy recsys_platform apps services
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: static-audit
+        name: static security and tag audit
+        entry: uv run python scripts/static_audit.py
+        language: system
+        pass_filenames: false

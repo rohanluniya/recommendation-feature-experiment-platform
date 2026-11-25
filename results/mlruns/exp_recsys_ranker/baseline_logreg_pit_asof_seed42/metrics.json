@@ -1,0 +1,8 @@
+{
+  "log_loss": 0.6364,
+  "ndcg_at_5": 0.7094,
+  "pr_auc": 0.3939,
+  "roc_auc": 0.5915,
+  "test_rows": 1077.0,
+  "train_rows": 3231.0
+}

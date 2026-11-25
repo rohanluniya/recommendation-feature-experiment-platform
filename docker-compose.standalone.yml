@@ -1,0 +1,28 @@
+# Single-container portable stack for quick evaluation on any Docker host (ARM64 or x86_64)
+
+services:
+  recsys-standalone:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.standalone
+    environment:
+      RECSYS_ENV: local_native
+      RECSYS_API_HOST: 0.0.0.0
+      RECSYS_API_PORT: 8030
+      RECSYS_SEED: 42
+    ports:
+      - "8030:8030"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8030/health', timeout=3)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    volumes:
+      - recsys_standalone_data:/app/.local_data
+
+volumes:
+  recsys_standalone_data:

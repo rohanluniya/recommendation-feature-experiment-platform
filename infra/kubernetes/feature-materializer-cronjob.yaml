@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: feature-materializer
+  namespace: recsys-platform
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+          containers:
+            - name: materializer
+              image: ghcr.io/ankdeshm/recommendation-feature-experiment-platform:0.1.0
+              command: ["/app/.venv/bin/python", "/app/services/feature_materializer.py", "--export-feast"]
+              resources:
+                requests:
+                  cpu: "200m"
+                  memory: "384Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "768Mi"

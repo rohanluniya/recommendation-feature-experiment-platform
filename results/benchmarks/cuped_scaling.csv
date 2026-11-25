@@ -1,0 +1,4 @@
+sample_users,control_users,treatment_users,srm_pvalue,srm_detected,unadjusted_pooled_var,cuped_pooled_var,variance_reduction_pct,unadjusted_ci_width,cuped_ci_width,ci_width_reduction_pct,unadjusted_pvalue,cuped_pvalue,cuped_theta,corr_xy,decision
+160,83,77,0.635256,False,6612.947,1571.829,76.23,49.576,23.632,52.33,0.006454,4.7e-05,4.1781,0.8731,SHIP_SIGNIFICANT_POSITIVE_LIFT
+300,148,152,0.817361,False,6124.871,1482.394,75.8,35.382,16.792,52.54,0.034915,0.0,4.3592,0.8706,SHIP_SIGNIFICANT_POSITIVE_LIFT
+800,394,406,0.671373,False,5539.06,1305.8,76.43,20.423,9.644,52.78,5e-06,0.0,4.3267,0.8742,SHIP_SIGNIFICANT_POSITIVE_LIFT

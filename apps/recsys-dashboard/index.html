@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RecSys Feature Store & Experimentation Control Tower</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge">P04</div>
+        <div>
+          <h1>RecSys Feature Store &amp; Experimentation Control Tower</h1>
+          <p class="subtitle">Apache Iceberg V2 Medallion &bull; Event-Time Sessionizer &bull; Strict PIT ASOF &bull; CUPED &amp; SRM Engine</p>
+        </div>
+      </div>
+      <div class="topbar-meta">
+        <span class="pill pill-live" id="env-pill">LOCAL_NATIVE</span>
+        <span class="pill pill-neutral" id="run-id-pill">run: loading...</span>
+        <span class="pill pill-ok" id="freshness-pill">freshness: --s</span>
+        <button id="refresh-btn" class="btn-secondary" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <section class="kpi-grid" aria-label="Platform Key Performance Indicators">
+      <article class="kpi-card">
+        <div class="kpi-label">PIT Future Leakage</div>
+        <div class="kpi-value" id="kpi-pit-violations">--</div>
+        <div class="kpi-sub" id="kpi-pit-sub">vs naive global join</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Online / Offline Parity</div>
+        <div class="kpi-value" id="kpi-parity">--</div>
+        <div class="kpi-sub" id="kpi-parity-sub">exact Iceberg match</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">CUPED Variance Reduction</div>
+        <div class="kpi-value" id="kpi-cuped">--</div>
+        <div class="kpi-sub" id="kpi-cuped-sub">95% CI tightened</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Experiment SRM Health</div>
+        <div class="kpi-value" id="kpi-srm">--</div>
+        <div class="kpi-sub" id="kpi-srm-sub">chi-squared p-value</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Event-Time Sessions</div>
+        <div class="kpi-value" id="kpi-sessions">--</div>
+        <div class="kpi-sub" id="kpi-sessions-sub">retractions &amp; late drops</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Data Quality &amp; DLQ</div>
+        <div class="kpi-value" id="kpi-dq">--</div>
+        <div class="kpi-sub" id="kpi-dq-sub">quarantine conservation</div>
+      </article>
+    </section>
+
+    <main class="main-grid">
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <div>
+            <h2>Interactive Live Recommendation &amp; Experiment Simulator</h2>
+            <p class="panel-desc">Calls protected <code>POST /v1/recommend</code> &amp; <code>GET /v1/features/online/{user_id}</code> with deterministic SHA-256 bucketing</p>
+          </div>
+          <span class="pill pill-neutral" id="sim-latency-pill">latency: -- ms</span>
+        </div>
+
+        <div class="sim-controls">
+          <label class="field">
+            <span>Viewer Entity ID</span>
+            <select id="user-select"></select>
+          </label>
+          <label class="field">
+            <span>Top-K Titles</span>
+            <select id="topk-select">
+              <option value="5" selected>Top 5</option>
+              <option value="8">Top 8</option>
+              <option value="10">Top 10</option>
+            </select>
+          </label>
+          <label class="field field-grow">
+            <span>API Key (Local Demo Serving Key)</span>
+            <input id="api-key-input" type="password" autocomplete="off" placeholder="X-API-Key">
+          </label>
+          <button id="run-rec-btn" class="btn-primary" type="button">Score &amp; Bucket</button>
+        </div>
+
+        <div class="sim-result-grid">
+          <div class="sim-box">
+            <h3>Experiment Assignment &amp; Live Online Feature Vector</h3>
+            <div id="assignment-summary" class="kv-grid"></div>
+          </div>
+          <div class="sim-box">
+            <h3>Ranked Recommendations</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="rec-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Genre</th>
+                    <th>Match</th>
+                    <th>Score</th>
+                    <th>Prior</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>CUPED vs Unadjusted 95% CI</h2>
+            <p class="panel-desc">Watch-time lift (min/user) &amp; covariate variance reduction</p>
+          </div>
+          <span class="pill pill-ok" id="exp-decision-pill">--</span>
+        </div>
+        <div id="cuped-chart" class="svg-chart"></div>
+        <div id="cuped-metrics-grid" class="kv-grid compact-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>PIT ASOF vs Naive Join Leakage Audit</h2>
+            <p class="panel-desc">Exposing artificial ROC-AUC inflation from future feature leakage</p>
+          </div>
+          <span class="pill pill-ok" id="pit-badge">0 LEAKS</span>
+        </div>
+        <div id="pit-chart" class="svg-chart"></div>
+        <div id="pit-metrics-grid" class="kv-grid compact-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Experiment Guardrails &amp; Interference</h2>
+            <p class="panel-desc">Latency p95, rebuffer, skip rate &amp; shared catalog spillover check</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="guardrails-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Control</th>
+                <th>Treatment</th>
+                <th>Delta</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="callout" id="interference-note"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Apache Iceberg V2 Medallion Inventory</h2>
+            <p class="panel-desc">Snapshot-versioned Bronze / Silver / Gold / Quality tables</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="iceberg-table">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th>Rows</th>
+                <th>Files</th>
+                <th>Snapshots</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel panel-wide">
+        <div class="panel-header">
+          <div>
+            <h2>Automated Data Quality Gate Ledger</h2>
+            <p class="panel-desc">Persisted in <code>quality.dq_results</code> Iceberg table with conservation &amp; SLO assertions</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="dq-table">
+            <thead>
+              <tr>
+                <th>Table / Target</th>
+                <th>Check Name</th>
+                <th>Observed</th>
+                <th>Threshold</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Event-Time Sessions &amp; Late Retractions</h2>
+            <p class="panel-desc">Cross-device sessions showing revision bumps &amp; watermark retractions</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="sessions-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Watch (s)</th>
+                <th>Devices</th>
+                <th>Rev</th>
+                <th>Retracted</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Quarantine DLQ &amp; OpenTelemetry Spans</h2>
+            <p class="panel-desc">Corrupt/schema-invalid events isolated before Bronze</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="dlq-table">
+            <thead>
+              <tr>
+                <th>Event ID</th>
+                <th>Schema</th>
+                <th>Quarantine Reason</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="trace-strip" id="trace-strip"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

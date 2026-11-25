@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "CatalogChangeV1",
+  "namespace": "com.recsys.catalog.v1",
+  "doc": "CDC event capturing content catalog creation, metadata edits, and availability updates.",
+  "fields": [
+    {"name": "change_id", "type": "string"},
+    {"name": "op", "type": {"type": "enum", "name": "CdcOp", "symbols": ["c", "u", "d", "r"]}},
+    {"name": "item_id", "type": "string"},
+    {"name": "title", "type": "string"},
+    {"name": "genre", "type": "string"},
+    {"name": "duration_seconds", "type": "int"},
+    {"name": "release_year", "type": "int"},
+    {"name": "maturity_rating", "type": "string"},
+    {"name": "popularity_prior", "type": "double"},
+    {"name": "is_active", "type": "boolean", "default": true},
+    {"name": "event_ts_ms", "type": "long"},
+    {"name": "ingest_ts_ms", "type": "long"},
+    {"name": "source_system", "type": "string", "default": "postgres-catalog-cdc"}
+  ]
+}

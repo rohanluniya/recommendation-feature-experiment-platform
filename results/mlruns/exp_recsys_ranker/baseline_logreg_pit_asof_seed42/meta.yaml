@@ -1,0 +1,7 @@
+artifact_uri: ./artifacts
+end_time: 1795578359575
+experiment_id: exp_recsys_ranker
+lifecycle_stage: active
+run_id: baseline_logreg_pit_asof_seed42
+run_name: baseline_logreg
+status: FINISHED

@@ -1,0 +1,9 @@
+project: recsys_feature_platform
+registry: ../.local_data/feast_registry.db
+provider: local
+online_store:
+  type: sqlite
+  path: ../.local_data/feast_online_store.db
+offline_store:
+  type: file
+entity_key_serialization_version: 3

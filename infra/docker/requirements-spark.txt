@@ -1,0 +1,4 @@
+# Container-isolated PySpark 4.1.4 dependencies (runs inside apache/spark:4.1.4-scala2.13-java17-python3-ubuntu)
+pyspark==4.1.4
+pyarrow==25.0.1
+pyyaml==6.0.3

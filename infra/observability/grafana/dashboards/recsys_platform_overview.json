@@ -1,0 +1,58 @@
+{
+  "title": "RecSys Feature Store & Experimentation Overview",
+  "uid": "recsys-platform-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "PIT Leakage Violations",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "recsys_pit_leakage_violations"}]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Online/Offline Parity Mismatch Ratio",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "recsys_online_offline_parity_mismatch_ratio"}]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "CUPED Variance Reduction %",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "recsys_experiment_cuped_variance_reduction_pct"}]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Experiment SRM p-value",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "recsys_experiment_srm_pvalue"}]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Online Feature Lookup Latency (p50 / p95 / p99 ms)",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(recsys_online_feature_latency_ms_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(recsys_online_feature_latency_ms_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(recsys_online_feature_latency_ms_bucket[5m]))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Ingested Events vs Quarantined DLQ Rate",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "rate(recsys_events_ingested_total[5m])", "legendFormat": "{{status}}"},
+        {"expr": "rate(recsys_dlq_events_total[5m])", "legendFormat": "dlq:{{reason}}"}
+      ]
+    }
+  ]
+}

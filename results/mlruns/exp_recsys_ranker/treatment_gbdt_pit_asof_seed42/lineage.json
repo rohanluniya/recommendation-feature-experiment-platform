@@ -1,0 +1,19 @@
+{
+  "dataset_mode": "pit_asof",
+  "feature_columns": [
+    "user_watch_seconds_total",
+    "user_play_count",
+    "user_completion_rate",
+    "user_skip_rate",
+    "user_rebuffer_rate",
+    "genre_match",
+    "item_popularity_prior",
+    "item_completion_rate_so_far",
+    "item_duration_seconds",
+    "is_cold_start_user",
+    "is_cold_start_item"
+  ],
+  "iceberg_snapshot_id": 3148272674426572780,
+  "pretrained_weights_used": false,
+  "source_table": "gold.training_dataset"
+}

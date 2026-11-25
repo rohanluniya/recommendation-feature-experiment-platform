@@ -1,0 +1,121 @@
+{
+  "generated_at_utc": "2026-11-25T03:46:05.953256+00:00",
+  "total_drills": 8,
+  "passed_drills": 8,
+  "drills": [
+    {
+      "drill_id": "CHAOS-01",
+      "title": "Heartbeat Storm Duplicate Flood (5x Replay)",
+      "status": "PASS",
+      "elapsed_ms": 2.09,
+      "metrics": {
+        "raw_events_injected": 100,
+        "duplicates_dropped": 80,
+        "valid_events_retained": 20,
+        "expected_watch_seconds": 600.0,
+        "observed_watch_seconds": 600.0
+      }
+    },
+    {
+      "drill_id": "CHAOS-02",
+      "title": "Out-of-Order Late Event Retraction & Side-Output Cutoff",
+      "status": "PASS",
+      "elapsed_ms": 0.08,
+      "metrics": {
+        "late_retractions": 1,
+        "late_dropped_events": 1,
+        "final_session_revision": 2,
+        "reconciled_watch_seconds": 100.0
+      }
+    },
+    {
+      "drill_id": "CHAOS-03",
+      "title": "Broker Outage WAL Spool & Idempotent Drain Recovery",
+      "status": "PASS",
+      "elapsed_ms": 0.73,
+      "metrics": {
+        "pre_outage_written": 15,
+        "during_outage_buffered": 25,
+        "drained_after_recovery": 25,
+        "total_replayed_contiguous": 40
+      }
+    },
+    {
+      "drill_id": "CHAOS-04",
+      "title": "Online Feature Store Wipe & Rebuild from Iceberg Gold",
+      "status": "PASS",
+      "elapsed_ms": 405.53,
+      "metrics": {
+        "active_users_after_wipe": 0,
+        "active_items_after_wipe": 0,
+        "rebuilt": {
+          "users_materialized": 80,
+          "items_materialized": 24,
+          "materialized_ts_ms": 1795578365020,
+          "backend_mode": "sqlite_wal_valkey_compat"
+        },
+        "parity_passed": true,
+        "parity_mismatches": 0,
+        "max_abs_numeric_diff": 0.0
+      }
+    },
+    {
+      "drill_id": "CHAOS-05",
+      "title": "Intentional SRM Traffic Skew Injection (50/50 -> 57/43)",
+      "status": "PASS",
+      "elapsed_ms": 455.99,
+      "metrics": {
+        "control_users": 209,
+        "treatment_users": 291,
+        "observed_treatment_ratio": 0.582,
+        "srm_chi2_stat": 13.448,
+        "srm_pvalue": 0.000245,
+        "decision": "INVALID_STOP_SRM_OR_CONTAMINATION"
+      }
+    },
+    {
+      "drill_id": "CHAOS-06",
+      "title": "Delayed Label Backfill Without Feature Timestamp Mutation",
+      "status": "PASS",
+      "elapsed_ms": 182.91,
+      "metrics": {
+        "rows_scanned": 1137,
+        "delayed_labels_applied": 90,
+        "positive_labels_before": 320,
+        "positive_labels_after": 410,
+        "feature_timestamps_mutated": 0,
+        "pit_violations_after_backfill": 0,
+        "iceberg_snapshot_before": 7438985971214992518,
+        "iceberg_snapshot_after": 6599970387366934526,
+        "time_travel_pos_before": 320,
+        "time_travel_pos_after": 410
+      }
+    },
+    {
+      "drill_id": "CHAOS-07",
+      "title": "Schema Drift & Corrupt Payload Quarantine Conservation",
+      "status": "PASS",
+      "elapsed_ms": 97.32,
+      "metrics": {
+        "total_received": 2380,
+        "bronze_valid": 2074,
+        "quarantined_dlq": 134,
+        "duplicates_dropped": 172,
+        "negative_watch_in_bronze": 0,
+        "conservation_exact": true
+      }
+    },
+    {
+      "drill_id": "CHAOS-08",
+      "title": "Cross-Bucket Contamination & Latency Guardrail Regression",
+      "status": "PASS",
+      "elapsed_ms": 167.27,
+      "metrics": {
+        "contaminated_users_detected": 4,
+        "latency_delta_ms": 15.996,
+        "latency_guardrail_passed": false,
+        "decision": "INVALID_STOP_SRM_OR_CONTAMINATION"
+      }
+    }
+  ]
+}

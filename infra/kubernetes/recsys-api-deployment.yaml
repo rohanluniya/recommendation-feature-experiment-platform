@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recsys-api
+  namespace: recsys-platform
+  labels:
+    app: recsys-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: recsys-api
+  template:
+    metadata:
+      labels:
+        app: recsys-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8030"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: recsys-api
+          image: ghcr.io/ankdeshm/recommendation-feature-experiment-platform:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8030
+              name: http
+          env:
+            - name: RECSYS_ENV
+              value: kubernetes
+            - name: VALKEY_ENABLED
+              value: "true"
+            - name: VALKEY_URL
+              value: redis://valkey.recsys-platform.svc.cluster.local:6379/0
+            - name: RECSYS_ADMIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: recsys-api-secrets
+                  key: admin_api_key
+            - name: RECSYS_ANALYST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: recsys-api-secrets
+                  key: analyst_api_key
+            - name: RECSYS_SERVING_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: recsys-api-secrets
+                  key: serving_api_key
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8030
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8030
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"

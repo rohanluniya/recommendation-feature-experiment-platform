@@ -1,0 +1,333 @@
+# Multi-profile distributed stack for Real-Time Recommendation, Feature Store & Experimentation Platform
+# Profiles: core, analytics, observability, full
+# Every container image tag is explicitly pinned for reproducible deployments.
+
+services:
+  kafka:
+    image: apache/kafka:4.3.2
+    profiles: ["core", "full"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:29092 --list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  apicurio:
+    image: apicurio/apicurio-registry:3.3.5
+    profiles: ["core", "full"]
+    environment:
+      QUARKUS_PROFILE: prod
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+
+  valkey:
+    image: valkey/valkey:9.2.0-alpine3.24
+    profiles: ["core", "full"]
+    command: ["valkey-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 640m
+    volumes:
+      - valkey_data:/data
+
+  rustfs:
+    image: rustfs/rustfs:1.0.6
+    profiles: ["core", "analytics", "full"]
+    environment:
+      RUSTFS_ACCESS_KEY: ${OBJECT_STORE_ACCESS_KEY:-recsysadmin}
+      RUSTFS_SECRET_KEY: ${OBJECT_STORE_SECRET_KEY:-recsysadminpass}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    volumes:
+      - rustfs_data:/data
+
+  postgres-catalog:
+    image: imresamu/postgis:17-3.6.1-alpine3.23
+    profiles: ["core", "analytics", "full"]
+    command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-recsys}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recsys_dev_pw}
+      POSTGRES_DB: catalog_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recsys} -d catalog_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/init-postgres-catalog.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+
+  lakekeeper:
+    image: quay.io/lakekeeper/catalog:v0.15.1
+    profiles: ["core", "analytics", "full"]
+    depends_on:
+      postgres-catalog:
+        condition: service_healthy
+    environment:
+      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://${POSTGRES_USER:-recsys}:${POSTGRES_PASSWORD:-recsys_dev_pw}@postgres-catalog:5432/catalog_db
+      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://${POSTGRES_USER:-recsys}:${POSTGRES_PASSWORD:-recsys_dev_pw}@postgres-catalog:5432/catalog_db
+      LAKEKEEPER__PG_ENCRYPTION_KEY: ${LAKEKEEPER_ENCRYPTION_KEY:-dev-local-encryption-key-32bytes!}
+    ports:
+      - "8181:8181"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  debezium-connect:
+    image: quay.io/debezium/connect:3.7.1.Final
+    profiles: ["core", "full"]
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres-catalog:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: recsys-cdc-connect
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+    ports:
+      - "8083:8083"
+    deploy:
+      resources:
+        limits:
+          memory: 1024m
+
+  flink-jobmanager:
+    image: flink:2.1.3-scala_2.12-java17
+    profiles: ["core", "full"]
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        state.backend.type: rocksdb
+        execution.checkpointing.interval: 30000
+    ports:
+      - "8082:8081"
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    volumes:
+      - ./processing/flink:/opt/flink/usrlib:ro
+
+  flink-taskmanager:
+    image: flink:2.1.3-scala_2.12-java17
+    profiles: ["core", "full"]
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+
+  spark-master:
+    image: apache/spark:4.1.4-scala2.13-java17-python3-ubuntu
+    profiles: ["analytics", "full"]
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
+    ports:
+      - "7077:7077"
+      - "8085:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    volumes:
+      - ./processing/spark:/opt/spark/work-dir/jobs:ro
+
+  trino:
+    image: trinodb/trino:484
+    profiles: ["analytics", "full"]
+    ports:
+      - "8084:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 2048m
+    volumes:
+      - ./sql/trino:/etc/trino/queries:ro
+
+  airflow:
+    image: apache/airflow:slim-3.4.0-python3.12
+    profiles: ["analytics", "full"]
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    ports:
+      - "8086:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    volumes:
+      - ./processing/airflow/dags:/opt/airflow/dags:ro
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.18.0
+    profiles: ["analytics", "full"]
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "file:///mlruns"]
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    volumes:
+      - ./results/mlruns:/mlruns
+
+  recsys-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.standalone
+    profiles: ["core", "full"]
+    environment:
+      RECSYS_ENV: docker_core
+      RECSYS_API_HOST: 0.0.0.0
+      RECSYS_API_PORT: 8030
+      VALKEY_ENABLED: "true"
+      VALKEY_URL: redis://valkey:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "8030:8030"
+    depends_on:
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8030/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1024m
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    profiles: ["observability", "full"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  grafana:
+    image: grafana/grafana:13.0.14
+    profiles: ["observability", "full"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-recsys_dev_grafana}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  loki:
+    image: grafana/loki:3.6.22
+    profiles: ["observability", "full"]
+    ports:
+      - "3100:3100"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.166.0-${OTEL_ARCH:-arm64}
+    profiles: ["observability", "full"]
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./infra/observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  marquez:
+    image: marquezproject/marquez:0.51.1
+    platform: linux/amd64
+    profiles: ["observability", "full"]
+    ports:
+      - "5001:5000"
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+
+volumes:
+  kafka_data:
+  valkey_data:
+  rustfs_data:
+  postgres_data:

@@ -1,0 +1,6 @@
+{
+  "dataset_mode": "pit_asof",
+  "license": "Apache-2.0",
+  "platform": "recommendation-feature-experiment-platform",
+  "pretrained_weights": "none"
+}

@@ -1,0 +1,4 @@
+profile,users,items,raw_events,valid_events,dlq_events,duplicates_dropped,sessions,late_retractions,pit_training_rows,pit_leakage_violations,naive_leakage_violations,parity_mismatches,sim_seconds,ingestion_events_per_sec,sessionization_events_per_sec,pit_join_rows_per_sec,full_e2e_seconds,full_e2e_events_per_sec,peak_rss_mib,baseline_logreg_pit_auc,treatment_gbdt_pit_auc,naive_leaking_gbdt_auc,auc_leakage_inflation
+smoke,100,30,5067,4478,99,490,198,3,956,0,1900,0,0.013,66169.7,453774.7,80165.5,0.634,7987.0,337.7,0.566,0.5288,0.755,0.2262
+local,300,75,28720,25833,563,2324,1209,30,5430,0,10837,0,0.08,59000.0,307905.2,72399.3,1.521,18887.3,486.7,0.5703,0.5636,0.6913,0.1277
+stress,800,150,96211,86462,1886,7863,4072,128,18052,0,36068,0,0.293,62586.1,228614.4,56720.4,4.394,21898.4,870.7,0.609,0.5996,0.6805,0.0809

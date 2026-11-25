@@ -1,0 +1,7 @@
+artifact_uri: ./artifacts
+end_time: 1795578359691
+experiment_id: exp_recsys_ranker
+lifecycle_stage: active
+run_id: treatment_gbdt_pit_asof_seed42
+run_name: treatment_gbdt
+status: FINISHED

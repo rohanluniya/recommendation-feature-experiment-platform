@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ExperimentExposureV1",
+  "namespace": "com.recsys.experiments.v1",
+  "doc": "Sticky experiment assignment and impression exposure event for A/B attribution.",
+  "fields": [
+    {"name": "exposure_id", "type": "string"},
+    {"name": "experiment_id", "type": "string"},
+    {"name": "variant", "type": "string"},
+    {"name": "user_id", "type": "string"},
+    {"name": "request_id", "type": "string"},
+    {"name": "exposure_ts_ms", "type": "long"},
+    {"name": "pre_experiment_watch_minutes", "type": "double"},
+    {"name": "assigned_bucket_hash", "type": "int"},
+    {"name": "ranker_model_version", "type": "string"},
+    {"name": "serving_latency_ms", "type": "double"}
+  ]
+}

@@ -1,0 +1,56 @@
+groups:
+  - name: recsys_platform_alerts
+    rules:
+      - alert: FeatureFreshnessSloBreach
+        expr: recsys_feature_freshness_lag_seconds > 300
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Online feature freshness lag exceeded 300s SLO"
+          runbook_url: "docs/reliability.md#alert-feature-freshness-slo-breach"
+
+      - alert: OnlineOfflineFeatureParityDrift
+        expr: recsys_online_offline_parity_mismatch_ratio > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Online feature store diverged from Iceberg Gold offline snapshots"
+          runbook_url: "docs/reliability.md#alert-online-offline-parity-drift"
+
+      - alert: PitFutureFeatureLeakageDetected
+        expr: recsys_pit_leakage_violations > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Point-in-time training dataset contains future feature timestamps"
+          runbook_url: "docs/reliability.md#alert-pit-future-leakage"
+
+      - alert: ExperimentSampleRatioMismatch
+        expr: recsys_experiment_srm_pvalue < 0.001
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Chi-squared SRM test detected skewed experiment traffic allocation"
+          runbook_url: "docs/reliability.md#alert-experiment-srm"
+
+      - alert: OnlineFeatureServingLatencyHigh
+        expr: histogram_quantile(0.99, rate(recsys_online_feature_latency_ms_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Online feature lookup p99 latency exceeded 10ms SLO"
+          runbook_url: "docs/reliability.md#alert-online-serving-latency"
+
+      - alert: QuarantineDlqSpike
+        expr: increase(recsys_dlq_events_total[15m]) > 500
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated schema or semantic validation failures quarantined to DLQ"
+          runbook_url: "docs/reliability.md#alert-quarantine-dlq-spike"

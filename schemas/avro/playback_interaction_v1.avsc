@@ -1,0 +1,40 @@
+{
+  "type": "record",
+  "name": "PlaybackInteractionV1",
+  "namespace": "com.recsys.events.v1",
+  "doc": "Streaming playback and discovery interaction emitted by client apps.",
+  "fields": [
+    {"name": "event_id", "type": "string", "doc": "Deterministic idempotency key."},
+    {"name": "event_type", "type": {
+      "type": "enum",
+      "name": "InteractionType",
+      "symbols": [
+        "IMPRESSION",
+        "PLAY_START",
+        "HEARTBEAT",
+        "PAUSE",
+        "COMPLETE",
+        "SKIP",
+        "SEARCH",
+        "THUMBS_UP",
+        "THUMBS_DOWN",
+        "DEVICE_SWITCH",
+        "SUBSCRIPTION_UPGRADE"
+      ]
+    }},
+    {"name": "user_id", "type": "string"},
+    {"name": "item_id", "type": "string"},
+    {"name": "device_id", "type": "string"},
+    {"name": "device_type", "type": "string"},
+    {"name": "event_ts_ms", "type": "long", "doc": "Client event-time epoch milliseconds (UTC)."},
+    {"name": "ingest_ts_ms", "type": "long", "doc": "Gateway ingestion processing-time epoch milliseconds (UTC)."},
+    {"name": "watch_seconds", "type": "double", "default": 0.0},
+    {"name": "position_seconds", "type": "double", "default": 0.0},
+    {"name": "rebuffer_count", "type": "int", "default": 0},
+    {"name": "search_query", "type": ["null", "string"], "default": null},
+    {"name": "experiment_id", "type": ["null", "string"], "default": null},
+    {"name": "experiment_variant", "type": ["null", "string"], "default": null},
+    {"name": "source_system", "type": "string", "default": "playback-gateway"},
+    {"name": "schema_version", "type": "int", "default": 1}
+  ]
+}
